@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #2c3e50; overflow-x: hidden; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); padding: 40px; border-radius: 20px; margin-bottom: 30px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); text-align: center; position: relative; overflow: hidden; }
+        .header::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); transition: left 0.5s; }
+        .header:hover::before { left: 100%; }
+        .header h1 { font-size: 3em; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 10px; }
+        .header p { font-size: 1.2em; color: #7f8c8d; font-weight: 500; }
+        .nav-tabs { display: flex; background: rgba(255, 255, 255, 0.9); border-radius: 15px; padding: 8px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
+        .nav-tab { flex: 1; padding: 15px 20px; text-align: center; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; font-weight: 600; color: #7f8c8d; position: relative; overflow: hidden; }
+        .nav-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); transform: translateY(-2px); }
+        .nav-tab:hover:not(.active) { background: rgba(102, 126, 234, 0.1); transform: translateY(-1px); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 30px; }
+        .stat-card { background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); text-align: center; transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); transition: left 0.5s; }
+        .stat-card:hover::before { left: 100%; }
+        .stat-card:hover { transform: translateY(-10px); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15); }
+        .stat-icon { font-size: 3em; margin-bottom: 15px; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-number { font-size: 2.5em; font-weight: 700; color: #2c3e50; margin-bottom: 10px; counter-reset: num var(--num); }
+        .stat-label { font-size: 1.1em; color: #7f8c8d; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+        .content-section { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .content-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px; }
+        .chart-container { background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
+        .chart-title { font-size: 1.5em; font-weight: 600; color: #2c3e50; margin-bottom: 20px; text-align: center; }
+        .chart-placeholder { height: 300px; background: linear-gradient(45deg, #f8f9fa, #e9ecef); border-radius: 15px; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 1.1em; border: 2px dashed #dee2e6; }
+        .notifications-table { background: rgba(255, 255, 255, 0.95); border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
+        .table-header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; font-weight: 600; font-size: 1.2em; }
+        .table-content { max-height: 400px; overflow-y: auto; }
+        .notification-item { padding: 20px; border-bottom: 1px solid #f1f3f4; transition: all 0.3s ease; cursor: pointer; }
+        .notification-item:hover { background: rgba(102, 126, 234, 0.05); transform: translateX(5px); }
+        .notification-item:last-child { border-bottom: none; }
+        .notification-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .notification-type { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .notification-status { padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .status-sent { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        .notification-email { font-weight: 600; color: #2c3e50; }
+        .notification-subject { color: #7f8c8d; font-size: 0.9em; margin-top: 5px; }
+        .form-container { background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
+        .form-group { margin-bottom: 25px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50; }
+        .form-input { width: 100%; padding: 15px; border: 2px solid #e9ecef; border-radius: 10px; font-size: 1em; transition: all 0.3s ease; background: rgba(255, 255, 255, 0.8); }
+        .form-input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); transform: translateY(-1px); }
+        .form-textarea { min-height: 120px; resize: vertical; }
+        .form-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 12px center; background-repeat: no-repeat; background-size: 16px; padding-right: 40px; appearance: none; }
+        .btn { padding: 15px 30px; border: none; border-radius: 10px; font-size: 1em; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; position: relative; overflow: hidden; }
+        .btn::before { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: rgba(255, 255, 255, 0.3); border-radius: 50%; transition: all 0.3s ease; transform: translate(-50%, -50%); }
+        .btn:hover::before { width: 300px; height: 300px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; transform: translateY(-2px); }
+        .btn-success { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(40, 167, 69, 0.4); }
+        .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px); z-index: 1000; display: none; animation: fadeIn 0.3s ease; }
+        .popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: white; border-radius: 20px; padding: 40px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); z-index: 1001; max-width: 500px; width: 90%; animation: popupShow 0.3s ease forwards; }
+        @keyframes popupShow { to { transform: translate(-50%, -50%) scale(1); } }
+        .popup-header { text-align: center; margin-bottom: 30px; }
+        .popup-icon { font-size: 4em; margin-bottom: 20px; color: #28a745; }
+        .popup-title { font-size: 1.5em; font-weight: 600; color: #2c3e50; margin-bottom: 10px; }
+        .popup-message { color: #7f8c8d; font-size: 1.1em; line-height: 1.6; }
+        .popup-actions { display: flex; gap: 15px; justify-content: center; margin-top: 30px; }
+        .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr; } .header h1 { font-size: 2em; } .nav-tabs { flex-direction: column; gap: 5px; } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: linear-gradient(135deg, #5a6fd8, #6a4190); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-bell"></i> Notification System</h1>
+            <p>Advanced Email Notification Management with Real-time Analytics</p>
+        </div>
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-tab="dashboard">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </div>
+            <div class="nav-tab" data-tab="notifications">
+                <i class="fas fa-envelope"></i> Notifications
+            </div>
+        </div>
+        <div class="content-section active" id="dashboard">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-paper-plane"></i></div>
+                    <div class="stat-number" id="stat-sent">847</div>
+                    <div class="stat-label">Emails Sent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-number" id="stat-pending">12</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-number" id="stat-failed">3</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-number" id="stat-rate">98.2%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+            </div>
+            <div class="dashboard-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Notification Analytics</div>
+                    <div class="chart-placeholder" id="analytics-dashboard">
+                        <div>
+                            <i class="fas fa-chart-bar" style="font-size: 3em; color: #667eea; margin-bottom: 15px;"></i>
+                            <br>
+                            Real-time Analytics Dashboard
+                            <br>
+                            <small>Email delivery metrics and performance stats</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="notifications-table">
+                    <div class="table-header">
+                        <i class="fas fa-bell"></i> Recent Notifications
+                    </div>
+                    <div class="table-content" id="recent-notifications">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="content-section" id="notifications">
+            <div class="form-container">
+                <h2 style="margin-bottom: 30px; color: #2c3e50; font-size: 1.8em;">
+                    <i class="fas fa-envelope"></i> Send New Notification
+                </h2>
+                <form id="notification-form">
+                    <div class="form-group">
+                        <label class="form-label" for="notification-type">Notification Type</label>
+                        <select class="form-input form-select" id="notification-type" required>
+                            <option value="">Select notification type</option>
+                            <option value="check_in">Check-in Confirmation</option>
+                            <option value="check_out">Check-out Confirmation</option>
+                            <option value="host_alert">Host Alert</option>
+                            <option value="security_alert">Security Alert</option>
+                            <option value="admin_notification">Admin Notification</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="recipient-email">Recipient Email</label>
+                        <input type="email" class="form-input" id="recipient-email" required 
+                               placeholder="Enter recipient email address">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="visitor-name">Visitor Name</label>
+                        <input type="text" class="form-input" id="visitor-name" required 
+                               placeholder="Enter visitor name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="host-name">Host Name</label>
+                        <input type="text" class="form-input" id="host-name" required 
+                               placeholder="Enter host name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="purpose">Purpose of Visit</label>
+                        <input type="text" class="form-input" id="purpose" 
+                               placeholder="Enter purpose of visit">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="additional-message">Additional Message</label>
+                        <textarea class="form-input form-textarea" id="additional-message" 
+                                  placeholder="Enter any additional message (optional)"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-paper-plane"></i> Send Notification
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="popup-overlay" id="popup-overlay">
+            <div class="popup" id="popup">
+                <div class="popup-header">
+                    <div class="popup-icon" id="popup-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="popup-title" id="popup-title">Success!</div>
+                    <div class="popup-message" id="popup-message">
+                        Your notification has been sent successfully.
+                    </div>
+                </div>
+                <div class="popup-actions">
+                    <button class="btn btn-primary" onclick="closePopup()">
+                        <i class="fas fa-check"></i> OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function closePopup() {
+            document.getElementById('popup-overlay').style.display = 'none';
+        }
+        function showPopup(title, message, iconClass) {
+            document.getElementById('popup-title').innerText = title;
+            document.getElementById('popup-message').innerText = message;
+            document.getElementById('popup-icon').innerHTML = `<i class="${iconClass}"></i>`;
+            document.getElementById('popup-overlay').style.display = 'block';
+        }
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+                document.getElementById(this.getAttribute('data-tab')).classList.add('active');
+                if (this.getAttribute('data-tab') === 'dashboard') loadDashboard();
+                if (this.getAttribute('data-tab') === 'notifications') loadNotifications();
+            });
+        });
+        async function loadDashboard() {
+            const res = await fetch('http://localhost:3001/api/analytics');
+            const stats = await res.json();
+            document.getElementById('stat-sent').innerText = stats.sent;
+            document.getElementById('stat-pending').innerText = stats.pending;
+            document.getElementById('stat-failed').innerText = stats.failed;
+            document.getElementById('stat-rate').innerText = stats.rate + '%';
+            const notifRes = await fetch('http://localhost:3001/api/notifications');
+            const notifications = await notifRes.json();
+            const recent = notifications.slice(0, 5).map(n => `
+                <div class="notification-item">
+                    <div class="notification-header">
+                        <span class="notification-type">${n.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                        <span class="notification-status status-${n.status}">${n.status.charAt(0).toUpperCase() + n.status.slice(1)}</span>
+                    </div>
+                    <div class="notification-email">${n.email}</div>
+                    <div class="notification-subject">${n.subject}</div>
+                </div>
+            `).join('');
+            document.getElementById('recent-notifications').innerHTML = recent || '<div style="padding:20px;">No notifications yet.</div>';
+        }
+        async function loadNotifications() {
+            const notifRes = await fetch('http://localhost:3001/api/notifications');
+            const notifications = await notifRes.json();
+            const list = notifications.map(n => `
+                <div class="notification-item">
+                    <div class="notification-header">
+                        <span class="notification-type">${n.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                        <span class="notification-status status-${n.status}">${n.status.charAt(0).toUpperCase() + n.status.slice(1)}</span>
+                    </div>
+                    <div class="notification-email">${n.email}</div>
+                    <div class="notification-subject">${n.subject}</div>
+                    <div style="color:#aaa;font-size:0.85em;">${n.timestamp}</div>
+                </div>
+            `).join('');
+            document.getElementById('notifications').innerHTML = '<div class="form-container">' + document.querySelector('#notifications .form-container').outerHTML + '</div>' + (list || '<div style="padding:20px;">No notifications yet.</div>');
+        }
+        document.getElementById('notification-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const type = document.getElementById('notification-type').value;
+            const email = document.getElementById('recipient-email').value;
+            const visitor_name = document.getElementById('visitor-name').value;
+            const host_name = document.getElementById('host-name').value;
+            const purpose = document.getElementById('purpose').value;
+            const message = document.getElementById('additional-message').value;
+            const subject = type === 'check_in' ? 'Welcome! Check-in Confirmation' : type === 'check_out' ? 'Thank you for visiting! Check-out Confirmation' : type === 'host_alert' ? `New Visitor Alert - ${visitor_name} has arrived` : type === 'security_alert' ? 'Security Alert' : 'Admin Notification';
+            const status = 'sent';
+            const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+            const res = await fetch('http://localhost:3001/api/notifications', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, email, subject, status, timestamp, visitor_name, host_name, purpose, message })
+            });
+            if (res.ok) {
+                showPopup('Success!', 'Your notification has been sent successfully.', 'fas fa-check-circle');
+                loadDashboard();
+            } else {
+                showPopup('Error', 'Failed to send notification.', 'fas fa-times-circle');
+            }
+            this.reset();
+        });
+        loadDashboard();
+    </script>
+</body>
+</html>
